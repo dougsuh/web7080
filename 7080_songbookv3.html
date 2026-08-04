@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7080 통기타 노래모음집 (2026. 8. 21)</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-light: #1e3a8a;
+            --border-color: #334155;
+            --chord-color: #fbbf24;
+            --badge-bg: #334155;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --accent: #2563eb;
+            --accent-light: #eff6ff;
+            --border-color: #cbd5e1;
+            --chord-color: #d97706;
+            --badge-bg: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans KR", sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+        }
+
+        /* SCREEN SWITCHING SYSTEM */
+        .screen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ----------------------------------
+           1. MENU / TOC SCREEN (목차 화면)
+        ---------------------------------- */
+        #menu-screen {
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .menu-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--accent);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .menu-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .menu-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding: 8px 14px 8px 34px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            width: 200px;
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent);
+            width: 240px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-light);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .toc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+            width: 100%;
+        }
+
+        .toc-item {
+            text-decoration: none;
+            color: var(--text-main);
+            padding: 14px 18px;
+            border-radius: 12px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .toc-item:hover {
+            background-color: var(--accent);
+            color: #ffffff !important;
+            transform: translateY(-2px);
+        }
+
+        .toc-item .num {
+            font-weight: 900;
+            color: var(--accent);
+            font-size: 1.15rem;
+            min-width: 32px;
+        }
+
+        .toc-item:hover .num {
+            color: #ffffff;
+        }
+
+        /* ----------------------------------
+           2. SONG / LYRICS SCREEN (가사 화면)
+           - 화면 전체 가득 참 (100vh)
+           - 상단 헤더/아래 화살표 없음
+           - 오직 [목차로 돌아가기 버튼] + [제목] + [가사]만 표시
+        ---------------------------------- */
+        #lyrics-screen {
+            padding: 24px 32px;
+            background-color: var(--bg-card);
+            justify-content: flex-start;
+            overflow: hidden;
+        }
+
+        .lyrics-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            border-bottom: 3px solid var(--accent);
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+
+        .song-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .song-number-tag {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--accent);
+        }
+
+        .song-display-title {
+            font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .back-to-menu-btn {
+            background-color: var(--accent);
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s, transform 0.1s;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .back-to-menu-btn:hover {
+            background-color: #1d4ed8;
+            transform: scale(1.03);
+        }
+
+        /* 가사 및 코드 출력 영역 - 화면 가득 채움 */
+        .lyrics-content-area {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .lyrics-body {
+            width: 100%;
+            height: 100%;
+            display: block; /* MUST BE BLOCK so chords stay inline with text without line breaks! */
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: clamp(1.2rem, 2.6vh, 2rem);
+            line-height: 1.9;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        /* 코드 스타일 - 줄바꿈 없이 가사 내에 원래 그대로 배치 */
+        .chord {
+            display: inline; /* STRICTLY INLINE so line does NOT break after chord */
+            color: var(--chord-color);
+            font-weight: 800;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 0 2px;
+            white-space: nowrap;
+        }
+
+        /* Responsive styling for mobile */
+        @media (max-width: 768px) {
+            #lyrics-screen {
+                padding: 16px 20px;
+            }
+
+            .song-display-title {
+                font-size: 1.5rem;
+            }
+
+            .back-to-menu-btn {
+                padding: 8px 14px;
+                font-size: 0.9rem;
+            }
+
+            .lyrics-body {
+                font-size: clamp(1rem, 2.1vh, 1.4rem);
+                line-height: 1.8;
+            }
+        }
+
+        /* Print Mode */
+        @media print {
+            .back-to-menu-btn, .menu-header, .menu-controls {
+                display: none !important;
+            }
+            #menu-screen { display: none !important; }
+            #lyrics-screen {
+                display: block !important;
+                height: auto;
+                padding: 0;
+                background: #fff;
+                color: #000;
+            }
+            .lyrics-body { color: #000; }
+            .chord { color: #000; font-weight: bold; text-decoration: underline; }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <!-- 1. 목차(메뉴) 화면 -->
+    <div id="menu-screen" class="screen active">
+        <div class="menu-header">
+            <h1>🎸 7080 통기타 노래모음집</h1>
+            <div class="menu-controls">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="곡 제목/가사 검색..." onkeyup="filterSongs()">
+                </div>
+                <button class="btn" onclick="changeFontSize(1)">A+</button>
+                <button class="btn" onclick="changeFontSize(-1)">A-</button>
+                <button class="btn" onclick="toggleTheme()">🌓 테마 전환</button>
+                <button class="btn" onclick="window.print()">🖨️ 인쇄/PDF</button>
+            </div>
+        </div>
+        <div class="toc-grid" id="tocGrid"></div>
+    </div>
+
+    <!-- 2. 가사 화면 (오직 [목차 버튼] + [제목] + [가사]만 표시) -->
+    <div id="lyrics-screen" class="screen">
+        <div class="lyrics-top-bar">
+            <div class="song-title-group">
+                <span class="song-number-tag" id="displaySongNumber"></span>
+                <h2 class="song-display-title" id="displaySongTitle"></h2>
+            </div>
+            <button class="back-to-menu-btn" onclick="showMenuScreen()">
+                📋 목차(메뉴)로 돌아가기
+            </button>
+        </div>
+
+        <div class="lyrics-content-area">
+            <div class="lyrics-body" id="displaySongLyrics"></div>
+        </div>
+    </div>
+
+    <script>
+        const songs = [{"num": "1", "title": "모닥불", "key": "C", "artist": "", "lyrics": "모닥불 피워 놓고 마주 앉아서 우리들의 이야기는 끝이 없어라\n인생은 연기속에 재를 남기고 말없이 사라지는 모닥불 같은 것\n타다가 꺼지는 그 순간까지 우리들의 이야기는 끝이 없어라\n타다가 꺼지는 그 순간까지 우리들의 이야기는 끝이 없어라"}, {"num": "2", "title": "연가", "key": "", "artist": "", "lyrics": "비바람이 치던 바다 잔잔해져 오면 오늘 그대오시려나 저 바다건너서\n저 하늘에 반짝이는 별빛도 아름답지만 사랑스런그대 눈은 더욱 아름다워라\n그대만을 기다리리 내사랑 영원히 기다리리\n그대만을 기다리리 내사랑 영원히 기다리리\n비바람이 치던 바다 잔잔해져 오면 오늘 그대오시려나 저 바다건너서\n저하늘에 반짝이는 별빛도 아름답지만 사랑스런 그대 눈은 더욱 아름다워라\n그대만을 기다리리 내사랑 영원히 기다리리\n그대만을 기다리리 내사랑 영원히 기다리리"}, {"num": "3", "title": "사랑의 진실", "key": "Am G F E7", "artist": "", "lyrics": "빠~빠빠빠빠~빠빠빠빠~빠빠빠빠빠~빠빠빠빠~빠빠빠빠~빠빠빠빠\n꿈 속에서 만나던 아름다운 그녀가 나에게 가르쳐준 사랑의 진실\n어느날 꿈속에서 나의 가슴 울리고 떠나며 가르쳐준 사랑의 진실\n아~~정말 나에게는 꿈이 되어 버렸네 다시한번 그려볼까\n그대모습 눈을감고 생각하다 잠이 들면 나는 어떡해\n꿈 속에서 만나던 아름다운 그녀가 나에게 가르쳐준 사랑의 진실\n빠~빠빠빠빠~빠빠빠 빠~빠빠빠빠 빠~빠빠빠 빠~빠빠빠 빠~빠빠빠빠"}, {"num": "4", "title": "사랑해 당신을", "key": "C", "artist": "", "lyrics": "사랑해 당신을 정말로 사랑해 당신이 내 곁을 떠나간 뒤에\n얼마나 눈물을 흘렸는지 모른다오 예 예 예예예예예예\n사랑해 당신을 정말로 사랑해\n멀리 떠나버린 못 잊을 님이여 당신이 내 곁을 떠나간 뒤에\n밤마다 그리는 보고 싶은 내 사랑아\n예예예예예예예예 사랑해 당신을 정말로 사랑해\n사랑해 당신을 정말로 사랑해 정말로 사랑해"}, {"num": "5", "title": "저 별은 나의 별", "key": "C", "artist": "", "lyrics": "저 별은 나의 별 저 별은 너의 별 별빛에 물들은 밤같이 까만 눈동자\n저별은 나의 별 저별은 너의 별 아침 이슬 내릴 때 까지\n별이 지면 꿈도 지고 슬픔만 남아요\n창가에 지는 별들의 미소 잊을 수가 없어요\n저 별은 나의 별 저 별은 너의 별 별빛에 물들은 밤같이 까만 눈동자\n저 별은 나의 별 저 별은 너의 별 아침 이슬 내릴 때까지\n라라라라라라 라라라라라라 라라라라라라 라라라라라라"}, {"num": "6", "title": "밤배", "key": "C", "artist": "", "lyrics": "C 검은 빛 바다 위를 밤배 저 밤배\n무섭지도 않은가봐 한 없이 흘러가네\n밤하늘 잔별들이 아롱져 비칠때면\n작은 노를 저어저어 은하수 건너가네\n끝없이 끝없이 자꾸만 가면 어디서 어디서 잠들텐가\n으음 볼사람 찾는이 없는 조그만 밤배야"}, {"num": "7", "title": "긴머리 소녀", "key": "C", "artist": "", "lyrics": "빗 소리 들리면 떠오르는 모습 달처럼 탐스런 하얀 얼굴\n우연히 만났다 말없이 가버린 긴 머리 소녀야\n눈 먼 아이처럼 귀 먼 아이처럼 조심 조심 징검다리 건너가네\n개울건너 작은집에 긴머리 소녀야\n눈 감고 두 손 모아 널 위해 기도하리라"}, {"num": "-", "title": "등대지기", "key": "A", "artist": "", "lyrics": "얼어붙은 달그림자 물결위에 차고\n한겨울에 거센 파도 모으는 작은 섬\n생각하라 저 등대를 지키는 사람의\n거룩하고 아름다운 사랑의 마음을"}, {"num": "8", "title": "날이 갈수록", "key": "Am E7", "artist": "", "lyrics": "루루루루 --Am E7 Am E7\nAm 가을잎 찬바람 에 흩어져날리면 캠퍼스 잔디위에 어느 덧 황금물결\n머물 수 없는 시절 시절 시절 시절들\n루루루루 꽃이 지네 루루루루 세월이 가네\n하늘엔 조각구름 무정한 세월이여 꽃잎이 떨어지면 젊음도 곧 가겠지\n잊을 수 없는 얼굴 얼굴 얼굴 얼굴들\n루루루루 꽃이 지네 루루루루 젊음도 가네."}, {"num": "9", "title": "토요일 밤", "key": "A D A", "artist": "", "lyrics": "(남자)\n긴 머리 짧은 치마 아름다운 그녀를 보면\n무슨말을 하여야 할까 오 토요일 밤에\n(여자)\n세상에서 제일가는 믿음직한 그이를 보면\n무슨말을 하여야 할까 오 토요일 밤에\n(모두)\n아름다운 노래소리 멀리멀리 퍼져갈 때\n희망에 찬 내일을 위해 오 노래부르자"}, {"num": "10", "title": "에델바이스", "key": "C", "artist": "", "lyrics": "에델바이스 에델바이스 아침 이슬에 젖어\n귀여운 미소는 나를 반기어 주네\n눈 처럼 빛나는 순결은 우리 들의 자랑\n에델바이스 에델바이스 마음 속에 꽃이여\n\nEdelweis Edelweis Every morning you greet me\nSmall and white clean and bright You look happy to meet me\nblossom of snow may you bloom and grow\nbloom and grow forever\nEdelweis Edelweis bless my homeland forever"}, {"num": "11", "title": "이루어질 수 없는 사랑", "key": "C Am Dm G7", "artist": "", "lyrics": "C 너의 침묵에 메마른 나의 입술 차가운 네 모습에 얼어 붙은 내 발자국\n돌아서는 나에게 사랑한단 말대신에 안녕 안녕 목메인 그 한마디\n이루어질 수 없는 사랑이었기에\n\n밤새워 하얀 길을 나홀로 걸었었다 부드러운 네 모습은 지금은 어디에\n가랑비야 내 얼굴을 더 세게 때려다오\n슬픈 내 눈물이 감춰질 수 있도록 이루어질 수 없는 사랑이었기에\n\n미워하며 돌아선 너를 기다리며 쌓았다가 부수고 또 쌓은 너의 성\n부서지는 파도가 삼켜버린 그 한마디\n정말 정말 너를 사랑했었다고 이루어질 수 없는 사랑이었기에"}, {"num": "12", "title": "행복의 나라로", "key": "C F G7", "artist": "", "lyrics": "라라라라 라라라라 라라라라 라라라\n장막을 거둬라 너의 좁은 눈으로 이 세상을 떠 보자\n창문을 열어라 춤추는 산들바람을 한번 더 느껴 보자\n가벼운 풀밭 위로 나를 걷게 해 주게 봄과 새들의 소리 듣고 싶소\n울고 웃고 싶소 내 마음을 만져줘 나도 행복의 나라로 갈 테야\n\n라라라라 라라라라 라라라라 라라라\n접어드는 초저녁 누워 공상에 들어 생각에 도취했소\n벽에 작은 창가로 흘러드는 산뜻함 노는 아이들 소리\n아하 나는 살겠소 태양만 비친다면 밤과 하늘과 바람 아래서\n비와 천둥의 소리 이겨 춤을 추겠네 나도 행복의 나라로 갈 테야"}, {"num": "13", "title": "아름다운 것들", "key": "C F G7", "artist": "", "lyrics": "1. 꽃잎끝에 달려있는 작은 이슬 방울들\n빗줄기 이들을 찾아와서 음 이들을 데려갈까\n[후렴] 바람아 너는 알고있나 비야 네가 알고있나\n무엇이 이 숲속에서 음 이들을 데려갈까\n\n2. 엄마 잃고 다리도 없는 가엾은 작은 새는\n바람이 거세게 불어오면 음 어디로 가야할까\n\n3. 모두가 사라진 숲에는 나무들만 남아있네\n때가 되면 이들도 사라져 음 고요만이 남겠네"}, {"num": "14", "title": "친구", "key": "C F G7", "artist": "", "lyrics": "1. 검푸른 바다위로 비가 내리면 어디가 하늘이고 어디가 묻이뇨\n그 깊은 바다속에 고요히 잠기면 무엇이 산 것이고 무엇이 죽었소\n<후렴> 눈앞에 보이는 친구의 모습 흩날리는 꽃잎위에 어른 거리오\n저 멀리 들리는 친구의 음성 달리는 기차바퀴가 대답하려나\n\n2. 눈앞에 보이는 수많은 모습들 그 모두 진정이라 우겨 말하면\n어느 누구 하나가 홀로 일어나 아니라고 말할 사람 누가 있겠소"}, {"num": "15", "title": "그건 너", "key": "Em D C B7", "artist": "", "lyrics": "1. 모두가 잠들은 고요한 이 밤에 어이해 나홀로 잠 못 이루나\n넘기는 책속에 수많은 글들이 어이해 한자도 보이질 않나\n[후렴] 그건 너 그건 너 바로 너 때문이야\n그건 너 그건 너 바로 너 때문이야\n\n2. 어제는 비가 오는 종로거리를 우산도 안 받고 홀로 걸었네\n우연히 마주친 동창생 녀석이 너 미쳤니 하면서 껄껄 웃더군\n\n3. 전화를 걸려고 동전바꿨네 종일토록 번호판과 씨름했었네\n그러다가 당신이받으면 끊었네 웬일인지 바보처럼 울고말았네"}, {"num": "16", "title": "한잔의 추억", "key": "Em Am B7 / Em D C B7", "artist": "", "lyrics": "1. 늦은밤 쓸쓸히 창가에 앉아 꺼져가는 불빛을 바라 보며는\n어데선가 날 부르는 소리가 들려\n취한눈 크게 뜨고 바라 보며는 반쯤찬 술잔 위에 어리는 얼굴\n[후렴] 마시자 한잔의 추억 마시자 한잔의 술\n\n2. 기나긴 겨울밤을 함께 지내며 소리없는 흐느낌을 서로 달래며\n마주치는 술잔위에 흐르던 사연\n흔들리는 불빛위에 어리는 모습 그리운 그 얼굴을 술잔에 닮네\n\n3. 어두운 밤거리에 나홀로 서서 희미한 가로등을 바라 보며는\n어데선가 날 부르는 소리가 들려\n행여 하는 마음에 뒤돌아 보면 보이는 건 외로운 내 그림자"}, {"num": "17", "title": "고래사냥", "key": "", "artist": "", "lyrics": "1. Am 술마시고 노래하고 춤을 춰봐도 G 가슴에는 하나가득\n슬픔뿐이 Am 네 무엇을 할 것인가 둘러보아도\nDm 보이는 건 모두가 F 돌아앉았 Am 네\n(후렴) C 자 Am 떠나자 C 동해바다로 Am 삼등삼등 완행열차 C 기차를 타고 Am (끝날 때 한번더)\n\n2. 간밤에 꾸었던 꿈에 세계도 아침에 일어나면 잊혀지지만\n그래도 생각나는 내 꿈 하나는 조그만 예쁜 고래 한 마리"}, {"num": "18", "title": "나는 피리보는 사나이", "key": "", "artist": "송창식", "lyrics": "Em 나는 피리 부는 사나 Am 이 D 바람 따라 가는 떠돌 G 이\nC 멋진 피리 하나 들고 다닌 B7 다\nEm 모진 비바람을 맞아 Am 도 D 거센 눈보라가 닥쳐 G 도\nC 은빛 피리 하나 물고 B7 서 언제나 웃고 다닌 Em 다\n\nEm 갈길 멀어 우는 철부지 소녀야 나의 피리소리 C 들으려 D 무나\n삘 B7 릴리 릴리\n\n<후렴> Em 나는 피리 부는 사나 Am 이 D 바람 따라 가는 떠돌 G 이\nC 은빛 피리 하나 물고 B7 서 언제나 웃는 멋쟁 Em 이\n\nEm 산이 높아 우는 철부지 구름아 나의 피리소리 C 들으려무나\n삘 B7 릴리 벨릴리\n<후렴>"}, {"num": "19", "title": "꽃 보다 귀한 여인", "key": "", "artist": "송창식", "lyrics": "Am 아무도 모른다네 E 나도 모른다네 G 사슴을 닮아 Am 서\nG 눈이 맑은 그 여 Am 자\nG 혼자서 먼 Am 길 G 떠나버렸 Am 네 E7\n\nAm 난 그만 바보처럼 E 울고 말았 Am 네\n꽃보다 더 귀한 E 나의 여인 Am 아\n\nG 하지만 호숫가 Am 를 G 스쳐가는 바람 Am 이 G 얼핏 보았 다 Am 고 G 하더라 Am 네 E7\n\nAm 난 그만 바보처럼 E7 울고 말았 Am 네 꽃보다 더 귀한 E7 나의 여인 Am 아"}, {"num": "20", "title": "딩동댕", "key": "Am", "artist": "송창식", "lyrics": "1. 딩동댕, 지난 여름 바닷가서 만났던 여인\n딩동댕, 하고픈 이야기는 많았지만\n딩동댕, 너무나 짧았던 그대와의 밤\n\n<후렴> 딩동댕 딩동댕, 말이나 해 볼걸 또 만나자고\n딩동댕 딩동댕, 여름은 가버렸네 속절도 없이\n\n2. 딩동댕, 지난 여름 우연히 잡았던 손목\n딩동댕, 하고픈 이야기는 많았지만\n딩동댕, 너무나 짧았던 그대와의 밤"}, {"num": "21", "title": "이름 모를 소녀", "key": "", "artist": "김정호", "lyrics": "Em 버들잎 Am 따다가 Em 연못 위에 B7 띄워놓고\nEm 쓸쓸히 G 바라 Am 보는 Em 이름 B7 모를 소 Em 녀\n\nD 밤은 깊어 가 Em 고 산새 G 들은 잠들 Am 어\n아무 D 도 찾지 않 G 는 조그 Am 만 연못 속 G 에\n달 C 빛 젖 D 은 금 G 빛 물결 D 바람에 이누 Em 나\n\nG 출렁이는 물 Am 결 속 Em 에 G 마음을 달 Am 래려 D 고\nC 말없이 바라 G 보다 C 쓸쓸히 돌아서 B7 서\n안 Em 갯속에 Am 사라져간 Em 이름 D 모를 소 Em 녀"}, {"num": "22", "title": "하얀 나비", "key": "A", "artist": "김정호", "lyrics": "1. A 음 생각을 Bm 말아요 A 지나간 일들 E7 은\nA 음 그리워 Bm 말아요 A 떠나갈 E7 님인데\nBm 꽃잎은 시들어요 A 슬퍼하지 말아 Bm 요 E7\n때가 되면 다 Bm 시 필 D 걸 서러 E7 워 말아요 음-- Bm D A\n\n2. 음~~ 어디로 갔을까 길 잃은 나그네는\n음~~ 어디로 갈까요 님찾는 하얀나비\n꽃잎은 시들어요 슬퍼하지 말아요 때가 되면 다시 필걸 서러워 말아요 음 음~~~~~음~~~~~음~~~~"}, {"num": "23", "title": "저 별과 달을", "key": "", "artist": "어니온즈", "lyrics": "G 어두운 G 밤 구름 D7 위 G 에 저 C 달 G 이 뜨 D7 면\n괜시리 G 날 찾아 D7 와 울 G 리 D7 고 가 G 네\n\n그누 D7 가 만들었 Em 나 저 C 별 G 과 달 D7 을\n고요 Em 한 밤이 되 G 면 살며 D7 시 찾아 G 와\n님그리워 하는 D7 말 알아 Em 나 주는듯 D7 이\n하늘나라 저멀리 G 서 나를 오 D7 라 반짝이 G 네"}, {"num": "24", "title": "편지", "key": "G C D7", "artist": "어니온즈", "lyrics": "말없이 건네주고 달아난 차거운 손\n가슴 속 울려주던 눈물 젖은 편지\n하얀 종이 위에 곱게 써 내려간\n너의 진실 알아내곤 난 그만 울어버렸네\n\n멍뚫린 내 가슴에 서러움이 물들이면\n떠나버린 너에게 사랑 노래 보낸다"}, {"num": "25", "title": "화", "key": "Am G F E7", "artist": "사월과 오월", "lyrics": "1. 너와 맹세한 반지 보며 반지같이 동그란 너의 얼굴 그리며\n오늘도 젖은 짚단 태우듯 또 하루를 보냈다\n오늘도 젖은 짚단 태우듯\n\n2. 너와 맹세한 반지 보며 반지같이 동그란 너의 얼굴 그리며\n오늘도 애 태우며 또 너를 생각했다 오늘도 애 태우며\n\n(후렴) 이대로 이별일 순 없다 화가 이 세상 끝에 있다면\n끝까지 따르리 그래도 안되면 화 안된다 더 가지마\nAm G F E7 Am Dm Am Dm Am G Am G"}, {"num": "26", "title": "나는 못난이", "key": "", "artist": "딕훼밀리", "lyrics": "1. C 해도 잠든 밤하늘에 작은 별들 F 이 소근대는 너와 G7 나를 흉보는가봐\nC 설레이며 말못하는 나의 마음 F 을 용기없는 G 못난이라 놀리는가봐\n랄랄랄라~~~~~ CFCFG\n\n2. 미소짓는 그 입술이 하도 예뻐서 입맞추고 싶지마는 자신이 없어\n누군가가 요놈하며 나설 것 같애 할까말까 망설이는 나는 못난이\n\n*반복\n나는 못난이 나는 못난이"}, {"num": "27", "title": "나 어떻게", "key": "Dm F A7", "artist": "샌드앤페블즈", "lyrics": "Dm 나 어떻게 너갑자 A7 기 떠나가면 Dm 나어떻게 너를 잊 A7 고 살아갈 Dm 까\nDm 나 어떻게 나를두 A7 고 떠나가면 Dm 그건안돼 정말안 A7 되 가지마 Dm 라\n\nBb 누구몰래 c 다짐했던 F 비밀이 있었 c7 나\nBb 다정했던 네가 상냥했던 네가 F 그럴 수 있나\nDm 못 믿겠어 떠난다 A7 는 그 말을 Dm 안 듣겠어 안녕이 A7 란 그 말 Dm 을\n\nDm 나나나나 나나나 A7 나나나나 Dm 나나나나 나나나 A7 나나나나\n[간주] Dm A7 Dm A7 Dm Bb C F C ...\n\nBb 다정했던 네가 상냥했던 네가 F 그럴 수 있나\nDm 못 믿겠어 떠난다 A7 는 그 말을 Dm 안 듣겠어 안녕이 A7 란 그 말 Dm 을\n\nDm 나어떻게 Gm 나어떻게 Bb 나어떻게 C7 나어떻게\nDm 나어떻게 Gm 나어떻게 Bb 나어떻게 c7 나어떻게 Dm F A7 D"}, {"num": "28", "title": "솔개", "key": "G", "artist": "", "lyrics": "1. 우리는 말 안하고 살 수가 없나 나르는 솔개처럼\n소리없이 날아가는 하늘 속에 마음은 가득차고\n푸른 하늘높이 구름속에 살아와\n수많은 질문과 대답속에 지쳐버린 나의 부리여\n\n2. 스치고 지나가는 사람들이 어느 덧 내게 다가와\n헤아릴 수 없는 얘기 속에 나도 우리가 됬소\n바로그때 나를 보면서 날아가 버린 나의 솔개여\n수많은 관계와 관계속에 잃어버린 나의 얼굴아\n\n3. 애드벌룬 같은 미래를 위해 오늘도 의미있는 하루\n준비하고 계획하는 삶속에서 나도 움직이려나\n머리들어 하늘을 보면 아련한 솔개의 노래\n수많은 농담과 진실속에 멀어져간 나의 솔개여"}, {"num": "29", "title": "젊은 연인들", "key": "C Em Am C F G", "artist": "", "lyrics": "C Em Am C F G\n다정한 여인이 손에 손을 잡고 걸어가는 길\n저기 저멀리 우리의 낙원이 손짓하며 우리를 부르네\n\n길은 험하고 비바람거세도 서로를 위하면\n눈보라속에도 손목을 꼭 잡고 따스한 온기를 나누리\n\n이 세상 모든 것 내게서 멀어져가도\n언제까지나 너만은 내게 남으리"}, {"num": "30", "title": "꿈의 대화", "key": "A", "artist": "", "lyrics": "땅거미 내려앉아 어두운 거리에 가만히 너에게 나의 꿈 들려주네\n너의 마음 나를 주고 나의 그것 너받으니 우리에 세상을 둘이서 만들자\n아침엔 꽃이 피고 밤엔 눈이 온다 들판에 산위에 따뜻한 꽃눈이\n네가 제일 좋아하는 석양이 질 때면 네가 제일 좋아하는 언덕에 올라\n나지막히 소리맞춰 노래를 부르자 작은 손 마주 잡고 지는해 바라보자\n에에--에에\n\n조용한 호수가에 아무도 없는 곳에 우리의 나무집을 둘이서 짓는다\n흰눈이 온 세상을 깨끗이 덮으면 작은 불 피워놓고 사랑을 하리라\n네가제일 좋아하는 별들이 불밝히면 네가제일 좋아하는 창가에 마주앉아\n따뜻한 서로의 빈곳을 채우리 네눈에 반짝이는 별빛을 헤리라\n에에--에에\n\n외로움이 없단다 우리들의 꿈속에 서러움도 없어라 너와 나의 불빛엔\n마음깊은 곳에서 우리 함께 나누자 너와 나만의 꿈의 대화를"}, {"num": "31", "title": "아침 이슬", "key": "C", "artist": "", "lyrics": "긴 밤 지새우고 풀잎마다 맺힌\n진주보다 더 고운 아침 이슬처럼\n내 맘의 설움이 알알이 맺힐 때\n아침 동산에 올라 작은 미소를 배운다\n태양은 묘지 위에 붉게 떠오르고\n한낮에 찌는 더위는 나의 시련일지라\n나 이제 가노라 저 거친 광야에\n서러움 모두 버리고 나 이제 가노라"}, {"num": "32", "title": "자정이 훨씬 넘었네", "key": "C F G7", "artist": "", "lyrics": "자정이 훨씬 넘었네 도대체 잠은 안 오네\n밤새 뒤척이다가 새벽닭이 울고 말았네\n아무리 생각해봐도 도대체 알 수가 없네\n왜 나를 피하려는지 정말 알 수가 없네\n\n그대여 지금은 어데, 내가 보고 싶지도 않나\n그대여 달려와 주오, 내 곁에 달려와 주오\n\n자정이 훨씬 넘었네 도대체 잠은 안 오네\n밤새 뒤척이다가 새벽닭이 울고 말았네"}, {"num": "33", "title": "또만나요 (Ending)", "key": "D G A", "artist": "딕훼밀리", "lyrics": "D 지금은 우리가 헤어져야 할 시간 다음에 또 만나요\nD 지금은 우리가 헤어져야 할 시간 다음에 또 만나요\n\nG 헤어지는 마음이야 아쉬웁지만 웃으면서 헤어져요\nG 다음에 또 만날 날을 약속하면서 이제 그만 헤어져요\n\nD A D   D A D\n빠빠빠 빠빠빠~~"}];
+
+        let fontMultiplier = 1.0;
+
+        function initApp() {
+            renderTOC();
+            if (window.location.hash.startsWith('#song-')) {
+                const songIndex = parseInt(window.location.hash.replace('#song-', ''));
+                if (!isNaN(songIndex) && songs[songIndex]) {
+                    showLyricsScreen(songIndex);
+                    return;
+                }
+            }
+            showMenuScreen();
+        }
+
+        function renderTOC() {
+            const tocGrid = document.getElementById('tocGrid');
+            tocGrid.innerHTML = '';
+            songs.forEach((song, idx) => {
+                const item = document.createElement('div');
+                item.className = 'toc-item';
+                item.onclick = () => showLyricsScreen(idx);
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="num">${song.num !== '-' ? song.num + '.' : '•'}</span>
+                        <span>${song.title}</span>
+                    </div>
+                    <span style="font-size:0.85rem; color:var(--text-muted); font-family:monospace;">${song.key}</span>
+                `;
+                tocGrid.appendChild(item);
+            });
+        }
+
+        function showLyricsScreen(index) {
+            const song = songs[index];
+            if (!song) return;
+
+            document.getElementById('displaySongNumber').innerText = song.num !== '-' ? song.num + '.' : '•';
+            document.getElementById('displaySongTitle').innerText = song.title + (song.artist ? ` (${song.artist})` : '');
+            
+            const formattedLyrics = highlightChords(song.lyrics);
+            document.getElementById('displaySongLyrics').innerHTML = formattedLyrics;
+
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('lyrics-screen').classList.add('active');
+
+            window.location.hash = 'song-' + index;
+        }
+
+        function showMenuScreen() {
+            document.getElementById('lyrics-screen').classList.remove('active');
+            document.getElementById('menu-screen').classList.add('active');
+            window.location.hash = 'menu';
+        }
+
+        function highlightChords(text) {
+            const chordRegex = /\b(C|G|D|A|E|B|F|Am|Em|Dm|Bm|Fm|Gm|G7|C7|A7|E7|B7|D7|F7|Bb|G7|FE7|AmE7AmE7|ADA|CFG7|CAmDmG7|EmDCB7|EmAmB7|GCD7)\b/g;
+            return text.replace(chordRegex, '<span class="chord">$1</span>');
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            if (body.getAttribute('data-theme') === 'light') {
+                body.setAttribute('data-theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+            }
+        }
+
+        function changeFontSize(delta) {
+            fontMultiplier += delta * 0.1;
+            if (fontMultiplier < 0.7) fontMultiplier = 0.7;
+            if (fontMultiplier > 1.8) fontMultiplier = 1.8;
+            
+            document.getElementById('displaySongLyrics').style.fontSize = `calc(clamp(1.2rem, 2.6vh, 2rem) * ${fontMultiplier})`;
+        }
+
+        function filterSongs() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const items = document.querySelectorAll('.toc-item');
+            songs.forEach((song, idx) => {
+                const match = song.title.toLowerCase().includes(query) || song.lyrics.toLowerCase().includes(query);
+                if (items[idx]) {
+                    items[idx].style.display = match ? 'flex' : 'none';
+                }
+            });
+        }
+
+        window.addEventListener('popstate', () => {
+            if (window.location.hash.startsWith('#song-')) {
+                const idx = parseInt(window.location.hash.replace('#song-', ''));
+                if (!isNaN(idx) && songs[idx]) showLyricsScreen(idx);
+            } else {
+                showMenuScreen();
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
